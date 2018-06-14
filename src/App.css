@@ -1,0 +1,38 @@
+.App {
+    text-align: center;
+    width: 900px;
+    margin: auto
+}
+
+.filters {
+    display: flex;
+    flex-direction: row;
+    margin-top: 20px;
+}
+
+.filters input {
+    margin-right: 10px;
+    padding: 5px;
+}
+
+.tableUsers {
+    margin: 20px auto;
+    width: 100%;
+}
+
+.tableUsers td, .tableUsers th {
+    padding: 3px 5px;
+    border: solid 1px gray;
+    border-collapse: collapse;
+}
+
+.buttons {
+    margin-top: 20px;
+    text-align: left;
+}
+
+.buttons button {
+    width: 80px;
+    margin-right: 10px;
+    padding: 5px;
+}
