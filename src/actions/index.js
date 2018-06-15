@@ -1,50 +1,56 @@
-export const REQUEST_POSTS = 'REQUEST_POSTS'
-export const RECEIVE_POSTS = 'RECEIVE_POSTS'
-export const SELECT_SUBREDDIT = 'SELECT_SUBREDDIT'
-export const INVALIDATE_SUBREDDIT = 'INVALIDATE_SUBREDDIT'
+export const REQUEST_USERS = 'REQUEST_POSTS';
+export const RECEIVE_USERS = 'RECEIVE_POSTS';
+export const UPDATE_FILTER = 'UPDATE_FILTER';
+export const CLEAR_FILTER = 'CLEAR_FILTER';
+export const REFRESH = 'REFRESH';
 
-export const selectSubreddit = subreddit => ({
-    type: SELECT_SUBREDDIT,
-    subreddit
-})
+export const updateFilter = filter => ({
+    type: UPDATE_FILTER,
+    filter
+});
 
-export const invalidateSubreddit = subreddit => ({
-    type: INVALIDATE_SUBREDDIT,
-    subreddit
-})
+export const clearFilter = () => ({
+    type: CLEAR_FILTER,
+});
 
-export const requestPosts = subreddit => ({
-    type: REQUEST_POSTS,
-    subreddit
-})
+export const requestUsers = filter => ({
+    type: REQUEST_USERS,
+    filter
+});
 
-export const receivePosts = (subreddit, json) => ({
-    type: RECEIVE_POSTS,
-    subreddit,
-    posts: json.data.children.map(child => child.data),
+export const refresh = () => ({
+    type: REFRESH,
+    isRefresh: true
+});
+
+export const receiveUsers = (filter, json) => ({
+    type: RECEIVE_USERS,
+    filter,
+    users: json,
     receivedAt: Date.now()
-})
+});
 
-const fetchPosts = subreddit => dispatch => {
-    dispatch(requestPosts(subreddit))
-    return fetch(`https://www.reddit.com/r/${subreddit}.json`)
+export const fetchUsers = filter => dispatch => {
+    dispatch(requestUsers(filter));
+    let queryString = Object.keys(filter).map(key => key + '=' + filter[key]).join('&');
+    return fetch(`http://redux-server.local/api/users?${queryString}`)
         .then(response => response.json())
-        .then(json => dispatch(receivePosts(subreddit, json)))
-}
+        .then(json => dispatch(receiveUsers(filter, json)))
+};
 
-const shouldFetchPosts = (state, subreddit) => {
-    const posts = state.postsBySubreddit[subreddit]
-    if (!posts) {
+const shouldFetchUsers = (state) => {
+    const users = state.users;
+    if (!users) {
         return true
     }
-    if (posts.isFetching) {
+    if (users.isFetching) {
         return false
     }
-    return posts.didInvalidate
-}
+    return users.isRefresh
+};
 
-export const fetchPostsIfNeeded = subreddit => (dispatch, getState) => {
-    if (shouldFetchPosts(getState(), subreddit)) {
-        return dispatch(fetchPosts(subreddit))
+export const fetchUsersIfNeeded = filter => (dispatch, getState) => {
+    if (shouldFetchUsers(getState())) {
+        return dispatch(fetchUsers(filter))
     }
 }

@@ -1,89 +1,95 @@
-import React, {Component} from 'react'
-import PropTypes from 'prop-types'
-import {connect} from 'react-redux'
-import {selectSubreddit, fetchPostsIfNeeded, invalidateSubreddit} from '../actions'
-import Picker from '../components/Picker'
-import Posts from '../components/Posts'
+import React, {Component} from 'react';
+import {connect} from "react-redux";
+import {updateFilter, refresh, clearFilter, fetchUsersIfNeeded} from "../actions";
+
+import Users from '../components/Users';
+import Loader from '../components/Loader';
+
+import '../style/bootstrap.min.css';
+import '../style/App.css';
 
 class App extends Component {
-    static propTypes = {
-        selectedSubreddit: PropTypes.string.isRequired,
-        posts: PropTypes.array.isRequired,
-        isFetching: PropTypes.bool.isRequired,
-        lastUpdated: PropTypes.number,
-        dispatch: PropTypes.func.isRequired
+    componentDidMount() {
+        const {dispatch, selectedFilter} = this.props;
+        dispatch(fetchUsersIfNeeded(selectedFilter));
     }
 
-    componentDidMount() {
-        const {dispatch, selectedSubreddit} = this.props
-        dispatch(fetchPostsIfNeeded(selectedSubreddit))
-    }
+    handleChangeFilter = filter => {
+        const {dispatch, selectedFilter} = this.props;
+        let new_filter = {...selectedFilter, ...filter};
+        dispatch(updateFilter(new_filter));
+    };
+
+    handleSearchButton = () => {
+        const {dispatch, selectedFilter} = this.props;
+        dispatch(fetchUsersIfNeeded(selectedFilter));
+    };
+
+    handleRefreshButton = () => {
+        const {dispatch, selectedFilter} = this.props;
+        dispatch(refresh());
+        dispatch(fetchUsersIfNeeded(selectedFilter));
+    };
+
+    handleClearButton = () => {
+        this.props.dispatch(clearFilter());
+    };
 
     componentWillReceiveProps(nextProps) {
-        if (nextProps.selectedSubreddit !== this.props.selectedSubreddit) {
-            const {dispatch, selectedSubreddit} = nextProps
-            dispatch(fetchPostsIfNeeded(selectedSubreddit))
+        if (nextProps.selectedFilter !== this.props.selectedFilter) {
+            const {dispatch, selectedFilter} = nextProps;
+            dispatch(fetchUsersIfNeeded(selectedFilter))
         }
     }
 
-    handleChange = nextSubreddit => {
-        this.props.dispatch(selectSubreddit(nextSubreddit))
-    }
-
-    handleRefreshClick = e => {
-        e.preventDefault()
-
-        const {dispatch, selectedSubreddit} = this.props
-        dispatch(invalidateSubreddit(selectedSubreddit))
-        dispatch(fetchPostsIfNeeded(selectedSubreddit))
-    }
-
     render() {
-        const {selectedSubreddit, posts, isFetching, lastUpdated} = this.props
-        const isEmpty = posts.length === 0
+        const {users, selectedFilter, isFetching} = this.props;
+        const total = users.length;
         return (
-            <div>
-                <Picker value={selectedSubreddit}
-                        onChange={this.handleChange}
-                        options={['reactjs', 'frontend']}/>
-                <p>
-                    {lastUpdated &&
-                    <span>
-              Last updated at {new Date(lastUpdated).toLocaleTimeString()}.
-                        {' '}
-            </span>
-                    }
-                    {!isFetching &&
-                    <button onClick={this.handleRefreshClick}>
-                        Refresh
-                    </button>
-                    }
-                </p>
-                {isEmpty
-                    ? (isFetching ? <h2>Loading...</h2> : <h2>Empty.</h2>)
-                    : <div style={{opacity: isFetching ? 0.5 : 1}}>
-                        <Posts posts={posts}/>
+            <div className="container">
+                <h2>User Manager</h2>
+                <div className="form mb-3">
+                    <div className="form-group">
+                        <label>Email address</label>
+                        <input type="text"
+                               className="form-control"
+                               value={selectedFilter.email || ''}
+                               placeholder="Enter email" onChange={e => this.handleChangeFilter({email: e.target.value})}/>
                     </div>
-                }
+                    <div className="form-group">
+                        <label>Name</label>
+                        <input type="text"
+                               className="form-control"
+                               value={selectedFilter.name || ''}
+                               placeholder="Enter name" onChange={e => this.handleChangeFilter({name: e.target.value})}/>
+                    </div>
+                    <button type="button" disabled={isFetching ? 'disabled' : ''} className="btn btn-primary mr-1" onClick={() => this.handleSearchButton()}>Search</button>
+                    <button type="button" disabled={isFetching ? 'disabled' : ''} className="btn btn-info mr-1" onClick={() => this.handleRefreshButton()}>Refresh</button>
+                    <button type="button" disabled={isFetching ? 'disabled' : ''} className="btn btn-outline-secondary" onClick={() => this.handleClearButton()}>Clear Filter</button>
+                </div>
+
+                <div className="mb-3">Total: {total}</div>
+
+                {isFetching ? <Loader /> : <Users users={users} />}
             </div>
         )
-    }
+    };
 }
 
 const mapStateToProps = state => {
-    const {selectedSubreddit, postsBySubreddit} = state;
+    const {selectedFilter, usersByFilter} = state;
     const {
         isFetching,
         lastUpdated,
-        items: posts
-    } = postsBySubreddit[selectedSubreddit] || {
+        users
+    } = usersByFilter || {
         isFetching: true,
-        items: []
+        users: []
     };
 
     return {
-        selectedSubreddit,
-        posts,
+        selectedFilter,
+        users,
         isFetching,
         lastUpdated
     }
