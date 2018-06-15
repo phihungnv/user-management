@@ -1,46 +1,65 @@
 import {combineReducers} from 'redux'
-import {UPDATE_FILTER, CLEAR_FILTER, RECEIVE_USERS, REQUEST_USERS, REFRESH_LIST} from '../actions'
+import {
+    SELECT_SUBREDDIT, INVALIDATE_SUBREDDIT,
+    REQUEST_POSTS, RECEIVE_POSTS
+} from '../actions'
 
-const currentFilter = (state  = {}, action) => {
+const selectedSubreddit = (state = 'reactjs', action) => {
     switch (action.type) {
-        case UPDATE_FILTER:
-            return {...state, ...action.filter};
-        case CLEAR_FILTER:
-            return {};
+        case SELECT_SUBREDDIT:
+            return action.subreddit
         default:
             return state
-
     }
-};
+}
 
-const userByFilter = (state  = {didRefresh: false, isFetching: true, users: []}, action) => {
+const posts = (state = {
+    isFetching: false,
+    didInvalidate: false,
+    items: []
+}, action) => {
     switch (action.type) {
-        case REQUEST_USERS:
+        case INVALIDATE_SUBREDDIT:
             return {
                 ...state,
-                didRefresh: false,
-                isFetching: true
-            };
-        case RECEIVE_USERS:
+                didInvalidate: true
+            }
+        case REQUEST_POSTS:
+            return {
+                ...state,
+                isFetching: true,
+                didInvalidate: false
+            }
+        case RECEIVE_POSTS:
             return {
                 ...state,
                 isFetching: false,
-                didRefresh: false,
-                users: action.users
-            };
-        case REFRESH_LIST:
-            return {
-                ...state,
-                didRefresh: true
-            };
+                didInvalidate: false,
+                items: action.posts,
+                lastUpdated: action.receivedAt
+            }
         default:
             return state
     }
-};
+}
+
+const postsBySubreddit = (state = {}, action) => {
+    switch (action.type) {
+        case INVALIDATE_SUBREDDIT:
+        case RECEIVE_POSTS:
+        case REQUEST_POSTS:
+            return {
+                ...state,
+                [action.subreddit]: posts(state[action.subreddit], action)
+            }
+        default:
+            return state
+    }
+}
 
 const rootReducer = combineReducers({
-    currentFilter,
-    userByFilter
-});
+    postsBySubreddit,
+    selectedSubreddit
+})
 
 export default rootReducer
